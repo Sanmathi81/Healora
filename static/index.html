@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HEALORA - Smart Hospital Communication & AI Clinical Workflows</title>
+  <meta name="description" content="AI-assisted triage, doctor-in-the-loop workflows, appointments, and hospital communication platform.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header class="app-header">
+    <div style="display: flex; align-items: center; gap: 1.5rem;">
+      <a href="/" class="brand" id="brand-logo">
+        <div class="brand-icon">H</div>
+        <div>
+          <span class="brand-title">HEALORA</span>
+          <span class="brand-badge">Clinical AI v1.0</span>
+        </div>
+      </a>
+      
+      <!-- Role Persona Switcher -->
+      <div class="role-pills" id="role-selector-bar">
+        <button class="role-pill active" id="btn-role-patient" onclick="switchPersona('PATIENT')">
+          <span>🧑 Patient</span>
+        </button>
+        <button class="role-pill" id="btn-role-doctor" onclick="switchPersona('DOCTOR')">
+          <span>🩺 Doctor</span>
+        </button>
+        <button class="role-pill" id="btn-role-admin" onclick="switchPersona('ADMIN')">
+          <span>🛡️ Hospital Admin</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="user-badge" id="current-user-badge">
+        <div class="user-avatar" id="user-avatar-initials">JD</div>
+        <div>
+          <div style="font-weight: 700; font-size: 0.85rem;" id="user-display-name">John Doe</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);" id="user-display-role">Patient Portal</div>
+        </div>
+      </div>
+      
+      <a href="/docs" target="_blank" class="api-link" id="link-swagger-docs" title="Interactive Swagger API Documentation">
+        <span>📖 OpenAPI Docs</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-container">
+    
+    <!-- Navigation Tabs per Persona -->
+    <nav class="portal-tabs" id="portal-tab-bar">
+      <!-- Injected dynamically by JS -->
+    </nav>
+
+    <!-- ==================== VIEW 1: PATIENT PORTAL ==================== -->
+    <section id="view-patient-portal">
+      
+      <!-- Tab Content: AI Triage & Symptom Checker -->
+      <div id="patient-tab-triage" class="tab-pane">
+        <div class="grid-2">
+          
+          <!-- Submit Symptom Query -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title" id="triage-form-title">⚡ AI Symptom Triage & Clinical Intake</h2>
+                <p class="card-subtitle">Submit your symptoms for immediate AI safety evaluation and clinical routing.</p>
+              </div>
+            </div>
+
+            <form id="form-patient-triage" onsubmit="handleTriageSubmit(event)">
+              <div class="form-group">
+                <label class="form-label" for="input-query-title">Chief Complaint / Summary</label>
+                <input type="text" id="input-query-title" class="form-input" placeholder="e.g., Sudden chest tightness after jogging, or persistent high fever" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="input-query-desc">Detailed Symptoms & Timeline</label>
+                <textarea id="input-query-desc" class="form-textarea" rows="4" placeholder="Describe when it started, severity, triggers, and any medications taken..." required></textarea>
+              </div>
+
+              <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1rem;">
+                <button type="submit" class="btn btn-primary" id="btn-submit-triage">
+                  <span>✨ Run AI Triage & Route to Doctor</span>
+                </button>
+                <span id="triage-spinner" style="display: none; font-size: 0.85rem; color: var(--primary);">Analyzing symptoms...</span>
+              </div>
+            </form>
+
+            <div class="disclaimer-banner">
+              <strong>Clinical Guardrail:</strong> AI responses do not replace licensed medical advice or emergency care. In an acute emergency, dial your local emergency services (911/112) immediately.
+            </div>
+          </div>
+
+          <!-- Live AI Assessment Card -->
+          <div class="card" id="card-ai-assessment">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">🤖 AI Clinical Assessment & Handoff</h2>
+                <p class="card-subtitle">Real-time evaluation generated by the Healora Safety Engine.</p>
+              </div>
+              <span id="triage-urgency-badge" class="badge badge-medium">Awaiting Input</span>
+            </div>
+
+            <div id="ai-assessment-placeholder" style="text-align: center; padding: 3rem 1rem; color: var(--text-dim);">
+              <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🩺</div>
+              <p>Submit your symptoms on the left to see instant department classification, urgency triage, and physician handoff.</p>
+            </div>
+
+            <div id="ai-assessment-result" style="display: none;">
+              <div class="ai-triage-box">
+                <div class="ai-triage-header">
+                  <div class="ai-tag">
+                    <span>🛡️ AI Safety Protocol Verified</span>
+                  </div>
+                  <div id="routed-dept-pill" class="badge badge-medium">General Medicine</div>
+                </div>
+                <div class="ai-summary-content" id="ai-structured-summary"></div>
+              </div>
+
+              <div style="margin-top: 1.25rem;">
+                <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-muted);">Assigned Clinical Care Team:</h4>
+                <div style="display: flex; align-items: center; gap: 0.75rem; background: rgba(255,255,255,0.03); padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                  <div class="user-avatar" style="background: var(--primary);">DR</div>
+                  <div>
+                    <div style="font-weight: 700; font-size: 0.9rem;" id="assigned-doctor-name">Dr. Sarah Lin (Cardiology)</div>
+                    <div style="font-size: 0.75rem; color: var(--emerald);">● Status: Triage Ticket Created & Assigned</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Previous Queries Stream -->
+        <div class="card" style="margin-top: 1.5rem;">
+          <div class="card-header">
+            <h3 class="card-title">📜 My Symptom History & Doctor Responses</h3>
+            <button class="btn btn-secondary btn-sm" onclick="loadPatientQueries()">🔄 Refresh</button>
+          </div>
+          <div class="stream-list" id="patient-queries-list">
+            <div style="color: var(--text-dim); text-align: center; padding: 2rem;">Loading query history...</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Tab Content: Appointment Booking -->
+      <div id="patient-tab-appointments" class="tab-pane" style="display: none;">
+        <div class="grid-2">
+          
+          <!-- Book Appointment Form -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">📅 Schedule Consultation</h2>
+                <p class="card-subtitle">Book verified clinical time with specialist doctors.</p>
+              </div>
+            </div>
+
+            <form id="form-book-appointment" onsubmit="handleBookAppointment(event)">
+              <div class="form-group">
+                <label class="form-label" for="select-doctor">Select Specialist Doctor</label>
+                <select id="select-doctor" class="form-select" required onchange="loadDoctorSlots()">
+                  <option value="">Select Doctor...</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="input-appt-date">Appointment Date</label>
+                <input type="date" id="input-appt-date" class="form-input" required onchange="loadDoctorSlots()">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="select-slot">Available Time Slot</label>
+                <select id="select-slot" class="form-select" required>
+                  <option value="">Choose a date & doctor first</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="input-appt-reason">Reason for Visit</label>
+                <input type="text" id="input-appt-reason" class="form-input" placeholder="e.g., Annual cardiology review or follow-up" required>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block" id="btn-submit-appointment">
+                <span>Confirm Appointment Booking</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Existing Appointments List -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">🗓️ Upcoming & Past Appointments</h3>
+                <p class="card-subtitle">Real-time status tracking and conflict protection.</p>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="loadAppointments()">🔄 Refresh</button>
+            </div>
+            <div class="stream-list" id="patient-appointments-list">
+              <div style="color: var(--text-dim); text-align: center; padding: 2rem;">Loading appointments...</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Tab Content: Prescriptions & Records -->
+      <div id="patient-tab-records" class="tab-pane" style="display: none;">
+        <div class="grid-2">
+          
+          <!-- Active Prescriptions -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">💊 Active Prescriptions</h3>
+              <button class="btn btn-secondary btn-sm" onclick="loadPatientPrescriptions()">🔄 Refresh</button>
+            </div>
+            <div class="stream-list" id="patient-prescriptions-list">
+              <div style="color: var(--text-dim); text-align: center; padding: 2rem;">Loading prescriptions...</div>
+            </div>
+          </div>
+
+          <!-- Medical Documents -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">📁 Medical Records & Lab Uploads</h3>
+                <p class="card-subtitle">Encrypted health record repository.</p>
+              </div>
+            </div>
+            
+            <form id="form-upload-record" onsubmit="handleUploadRecord(event)" style="margin-bottom: 1.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="input-record-title">Document Title</label>
+                <input type="text" id="input-record-title" class="form-input" placeholder="e.g., Resting ECG Scan or Blood Report" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="select-record-type">Record Category</label>
+                <select id="select-record-type" class="form-select">
+                  <option value="LAB_REPORT">Lab Report</option>
+                  <option value="IMAGING">Imaging / X-Ray / Scan</option>
+                  <option value="DISCHARGE_SUMMARY">Discharge Summary</option>
+                  <option value="OTHER">Other Health Document</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="input-record-file">Select File (PDF, PNG, JPG)</label>
+                <input type="file" id="input-record-file" class="form-input" required>
+              </div>
+              <button type="submit" class="btn btn-secondary btn-block" id="btn-upload-record">
+                <span>⬆️ Upload Document</span>
+              </button>
+            </form>
+
+            <div class="stream-list" id="patient-records-list">
+              <div style="color: var(--text-dim); text-align: center; padding: 1rem;">No uploaded documents yet.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== VIEW 2: DOCTOR CLINICAL PORTAL ==================== -->
+    <section id="view-doctor-portal" style="display: none;">
+      
+      <!-- Doctor Triage & Clinical Decisions -->
+      <div id="doctor-tab-inbox" class="tab-pane">
+        <div class="grid-2">
+          
+          <!-- Incoming Patient Queries Queue -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">📥 Clinical Triage Inbox</h2>
+                <p class="card-subtitle">Patient queries auto-routed by the AI safety agent.</p>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="loadDoctorInbox()">🔄 Refresh</button>
+            </div>
+            <div class="stream-list" id="doctor-inbox-list">
+              <div style="color: var(--text-dim); text-align: center; padding: 2rem;">Loading triage queue...</div>
+            </div>
+          </div>
+
+          <!-- Doctor Clinical Reply & Advice Form -->
+          <div class="card" id="card-doctor-reply">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">🩺 Doctor-in-the-Loop Clinical Response</h3>
+                <p class="card-subtitle">Review AI structured summary and issue verified clinical guidance.</p>
+              </div>
+            </div>
+
+            <div id="doctor-selected-query-info" style="margin-bottom: 1rem; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+              <div style="color: var(--text-dim); font-size: 0.85rem;">Select a query from the left queue to respond.</div>
+            </div>
+
+            <form id="form-doctor-response" onsubmit="handleDoctorResponseSubmit(event)" style="display: none;">
+              <input type="hidden" id="reply-query-id">
+
+              <div class="form-group">
+                <label class="form-label" for="input-doctor-reply-text">Physician Clinical Advice</label>
+                <textarea id="input-doctor-reply-text" class="form-textarea" rows="4" placeholder="Enter clinical assessment, guidance, and warnings..." required></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="input-doctor-recommendations">Recommendations & Next Steps</label>
+                <input type="text" id="input-doctor-recommendations" class="form-input" placeholder="e.g., Avoid cardio exercises, monitor BP twice daily">
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block" id="btn-submit-doctor-reply">
+                <span>✅ Sign & Send Verified Clinical Response</span>
+              </button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Doctor Schedule Tab -->
+      <div id="doctor-tab-schedule" class="tab-pane" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">🗓️ Clinical Appointment Schedule</h2>
+              <p class="card-subtitle">Manage consultations, mark completed, or update notes.</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="loadDoctorSchedule()">🔄 Refresh</button>
+          </div>
+          <div class="stream-list" id="doctor-schedule-list">
+            <div style="color: var(--text-dim); text-align: center; padding: 2rem;">Loading schedule...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Doctor Prescribe Tab -->
+      <div id="doctor-tab-prescribe" class="tab-pane" style="display: none;">
+        <div class="card" style="max-width: 800px; margin: 0 auto;">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">✍️ Issue Digital Prescription</h2>
+              <p class="card-subtitle">Create structured pharmacy prescription for a patient.</p>
+            </div>
+          </div>
+
+          <form id="form-create-prescription" onsubmit="handleCreatePrescription(event)">
+            <div class="grid-2">
+              <div class="form-group">
+                <label class="form-label" for="prescribe-patient-id">Patient Profile ID</label>
+                <input type="number" id="prescribe-patient-id" class="form-input" value="1" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="prescribe-diagnosis">Clinical Diagnosis</label>
+                <input type="text" id="prescribe-diagnosis" class="form-input" placeholder="e.g., Hypertension Stage 1" required>
+              </div>
+            </div>
+
+            <div style="margin: 1rem 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; background: rgba(0,0,0,0.2);">
+              <h4 style="font-size: 0.9rem; margin-bottom: 0.75rem; color: var(--primary);">Medication Item:</h4>
+              <div class="grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="med-name">Medication Name</label>
+                  <input type="text" id="med-name" class="form-input" placeholder="e.g., Amlodipine" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="med-dosage">Dosage</label>
+                  <input type="text" id="med-dosage" class="form-input" placeholder="e.g., 5mg" required>
+                </div>
+              </div>
+              <div class="grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="med-freq">Frequency</label>
+                  <input type="text" id="med-freq" class="form-input" placeholder="e.g., Once daily in morning" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="med-duration">Duration</label>
+                  <input type="text" id="med-duration" class="form-input" placeholder="e.g., 30 days" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="prescribe-notes">Doctor Notes / Instructions</label>
+              <textarea id="prescribe-notes" class="form-textarea" placeholder="Take with food. Follow up in 4 weeks."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="btn-save-prescription">
+              <span>💊 Issue & Dispatch Prescription</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== VIEW 3: HOSPITAL ADMIN PORTAL ==================== -->
+    <section id="view-admin-portal" style="display: none;">
+      
+      <!-- Metrics & Overview -->
+      <div class="grid-4" style="margin-bottom: 1.5rem;">
+        <div class="card stat-card">
+          <div class="stat-icon" style="background: rgba(14, 165, 233, 0.15); color: var(--primary);">👥</div>
+          <div>
+            <div class="stat-value" id="stat-total-users">4</div>
+            <div class="stat-label">Active Users</div>
+          </div>
+        </div>
+
+        <div class="card stat-card">
+          <div class="stat-icon" style="background: rgba(99, 102, 241, 0.15); color: var(--secondary);">🩺</div>
+          <div>
+            <div class="stat-value" id="stat-total-doctors">2</div>
+            <div class="stat-label">Medical Specialists</div>
+          </div>
+        </div>
+
+        <div class="card stat-card">
+          <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald);">📅</div>
+          <div>
+            <div class="stat-value" id="stat-total-appts">1</div>
+            <div class="stat-label">Consultations</div>
+          </div>
+        </div>
+
+        <div class="card stat-card">
+          <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: var(--amber);">⚡</div>
+          <div>
+            <div class="stat-value" id="stat-total-queries">1</div>
+            <div class="stat-label">Triage Cases</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Clinical Governance & Audit Logs -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">🛡️ Clinical Governance & Audit Trail</h2>
+            <p class="card-subtitle">HIPAA-compliant immutable action logging across users, appointments, and records.</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="loadAuditLogs()">🔄 Refresh Logs</button>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left;" id="table-audit-logs">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted);">
+                <th style="padding: 0.75rem 1rem;">Timestamp</th>
+                <th style="padding: 0.75rem 1rem;">Action</th>
+                <th style="padding: 0.75rem 1rem;">Resource</th>
+                <th style="padding: 0.75rem 1rem;">User ID</th>
+                <th style="padding: 0.75rem 1rem;">Details</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-audit-logs">
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-dim);">Loading audit trail...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Notifications & Toast Alerts -->
+  <div id="toast-container"></div>
+
+  <!-- Application JS -->
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
