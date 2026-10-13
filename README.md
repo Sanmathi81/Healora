@@ -33,13 +33,16 @@ HEALORA is an enterprise-grade hospital communication and clinical decision-supp
 # Activate existing virtual environment
 .venv\Scripts\activate
 
+# Navigate to backend directory
+cd backend
+
 # Install dependencies (if not already installed)
 pip install -r requirements.txt
 ```
 
 ### 2. Database & Seeding
 ```bash
-# Seed initial demo accounts and medical records
+# Inside backend/ folder:
 python -m app.db.init_db
 ```
 
@@ -53,6 +56,7 @@ python -m app.db.init_db
 
 ### 3. Run Development Server
 ```bash
+# Run from the backend directory:
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -67,10 +71,11 @@ uvicorn app.main:app --reload --port 8000
 HEALORA includes a comprehensive test suite covering AI triage, authentication, appointments, and queries:
 
 ```bash
+# Inside backend directory:
 pytest -v
 ```
 
-All 9 test suites run against an isolated in-memory SQLite database (`tests/conftest.py`).
+All 9 test suites run against an isolated in-memory SQLite database (`backend/tests/conftest.py`).
 
 ---
 
@@ -78,25 +83,25 @@ All 9 test suites run against an isolated in-memory SQLite database (`tests/conf
 
 ```
 Healora/
-├── app/
-│   ├── ai/                # AI Safety Guard, Triage & Summarizer Agents
-│   ├── api/v1/endpoints/  # Auth, Appointments, Queries, Doctors, Admin, Records
-│   ├── core/              # Config, Security, JWT Tokens, Dependencies
-│   ├── db/                # SQLAlchemy session, Base, Seed script
-│   ├── models/            # User, Doctor, Patient, Appointment, Query, Audit
-│   ├── schemas/           # Pydantic v2 validation models
-│   ├── services/          # AuditService, NotificationService
-│   └── main.py            # FastAPI Application lifecycle & routes
+├── backend/               # FastAPI Backend Service
+│   ├── app/
+│   │   ├── ai/            # AI Safety Guard, Triage & Summarizer Agents
+│   │   ├── api/v1/endpoints/ # Auth, Appointments, Queries, Doctors, Admin, Records
+│   │   ├── core/          # Config, Security, JWT Tokens, Dependencies
+│   │   ├── db/            # SQLAlchemy session, Base, Seed script
+│   │   ├── models/        # User, Doctor, Patient, Appointment, Query, Audit
+│   │   ├── schemas/       # Pydantic v2 validation models
+│   │   ├── services/      # AuditService, NotificationService
+│   │   └── main.py        # FastAPI Application lifecycle & routes
+│   ├── alembic/           # Database migrations
+│   ├── tests/             # Pytest test suite
+│   ├── uploads/           # Uploaded medical records
+│   ├── Dockerfile         # Backend container definition
+│   ├── requirements.txt   # Dependencies
+│   └── pytest.ini         # Pytest configuration
 ├── static/                # Single-page web portal (HTML, CSS, JS)
 │   ├── css/styles.css     # Glassmorphic clinical UI design system
 │   ├── js/app.js          # Role-switching SPA client logic
 │   └── index.html         # Main application interface
-├── tests/                 # Pytest test suite
-│   ├── conftest.py        # Isolated test database fixtures
-│   ├── test_ai_triage.py  # Emergency detection & routing tests
-│   ├── test_auth.py       # JWT registration & login tests
-│   ├── test_appointments.py # Booking & conflict prevention tests
-│   └── test_queries.py    # Query triage & doctor response tests
-├── alembic/               # Database migrations
-└── requirements.txt       # Dependencies
+└── docker-compose.yml     # Multi-container orchestration (DB + Backend)
 ```

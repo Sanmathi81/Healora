@@ -15,7 +15,6 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     # Ensure upload directory exists
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    os.makedirs("static", exist_ok=True)
     yield
 
 
@@ -46,9 +45,10 @@ app.add_middleware(
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
-# Serve frontend static files
-if os.path.exists("static"):
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+# Serve frontend static files (checks local backend/static or repository root ../static)
+static_dir = next((d for d in ["static", "../static"] if os.path.exists(d) and os.path.isdir(d)), None)
+if static_dir:
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Include API v1 Router
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
@@ -56,7 +56,8 @@ app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 
 @app.get("/", include_in_schema=False)
 def root():
-    if os.path.exists("static/index.html"):
-        return FileResponse("static/index.html")
+    for index_path in ["static/index.html", "../static/index.html"]:
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
     return RedirectResponse(url="/docs")
 
