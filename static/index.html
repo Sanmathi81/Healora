@@ -15,48 +15,143 @@
 </head>
 <body>
 
-  <!-- Top Header Navigation -->
-  <header class="app-header">
-    <div style="display: flex; align-items: center; gap: 1.5rem;">
-      <a href="/" class="brand" id="brand-logo">
-        <div class="brand-icon">H</div>
-        <div>
-          <span class="brand-title">HEALORA</span>
-          <span class="brand-badge">Clinical AI v1.0</span>
+  <div id="auth-screen" class="auth-page">
+    <div class="auth-shell">
+      <div class="auth-hero">
+        <div class="auth-badge">HEALORA Secure Access</div>
+        <h1>Smart hospital care built for everyday patients, doctors, and administrators.</h1>
+        <p>Sign in securely to manage appointments, clinical intake, patient records, and care operations.</p>
+
+        <ul class="auth-feature-list">
+          <li>✔️ Role-based secure access</li>
+          <li>✔️ AI triage and patient communication</li>
+          <li>✔️ Professional care coordination</li>
+        </ul>
+      </div>
+
+      <div class="auth-card">
+        <div class="auth-role-grid">
+          <button class="auth-role active" type="button" data-role="PATIENT">
+            <span>🧑</span>
+            <span>Patient Login</span>
+          </button>
+          <button class="auth-role" type="button" data-role="DOCTOR">
+            <span>🩺</span>
+            <span>Doctor Login</span>
+          </button>
+          <button class="auth-role" type="button" data-role="ADMIN">
+            <span>🛡️</span>
+            <span>Admin Login</span>
+          </button>
         </div>
-      </a>
-      
-      <!-- Role Persona Switcher -->
-      <div class="role-pills" id="role-selector-bar">
-        <button class="role-pill active" id="btn-role-patient" onclick="switchPersona('PATIENT')">
-          <span>🧑 Patient</span>
-        </button>
-        <button class="role-pill" id="btn-role-doctor" onclick="switchPersona('DOCTOR')">
-          <span>🩺 Doctor</span>
-        </button>
-        <button class="role-pill" id="btn-role-admin" onclick="switchPersona('ADMIN')">
-          <span>🛡️ Hospital Admin</span>
-        </button>
+
+        <div class="auth-divider"><span>Secure sign in</span></div>
+
+        <form id="form-role-login" novalidate>
+          <div id="auth-message" class="auth-message" aria-live="polite"></div>
+
+          <div class="form-group">
+            <label class="form-label" for="login-email">Email address</label>
+            <input type="email" id="login-email" class="form-input" placeholder="name@healora.com" autocomplete="email" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="login-password">Password</label>
+            <div class="password-field">
+              <input type="password" id="login-password" class="form-input" placeholder="Enter your password" autocomplete="current-password" required>
+              <button type="button" class="password-toggle" id="btn-toggle-password" aria-label="Show or hide password">Show</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="btn-login-role">
+            <span>🔐 Sign in</span>
+          </button>
+
+          <div class="auth-links">
+            <button type="button" class="text-button" id="btn-forgot-password">Forgot password?</button>
+            <button type="button" class="text-button" id="btn-create-account">Create patient account</button>
+          </div>
+        </form>
+
+        <form id="form-role-register" class="hidden" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="register-full-name">Full name</label>
+            <input type="text" id="register-full-name" class="form-input" placeholder="Your full name" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="register-email">Email address</label>
+            <input type="email" id="register-email" class="form-input" placeholder="you@example.com" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="register-phone">Phone number</label>
+            <input type="tel" id="register-phone" class="form-input" placeholder="+1 555 123 4567" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="register-password">Password</label>
+            <input type="password" id="register-password" class="form-input" placeholder="Create a secure password" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            <span>✅ Create account</span>
+          </button>
+
+          <div class="auth-links">
+            <button type="button" class="text-button" id="btn-back-to-login">Back to login</button>
+          </div>
+        </form>
       </div>
     </div>
+  </div>
 
-    <div class="header-actions">
-      <div class="user-badge" id="current-user-badge">
-        <div class="user-avatar" id="user-avatar-initials">JD</div>
-        <div>
-          <div style="font-weight: 700; font-size: 0.85rem;" id="user-display-name">John Doe</div>
-          <div style="font-size: 0.72rem; color: var(--text-muted);" id="user-display-role">Patient Portal</div>
+  <div id="app-shell" class="hidden">
+    <!-- Top Header Navigation -->
+    <header class="app-header">
+      <div style="display: flex; align-items: center; gap: 1.5rem;">
+        <a href="/" class="brand" id="brand-logo">
+          <div class="brand-icon">H</div>
+          <div>
+            <span class="brand-title">HEALORA</span>
+            <span class="brand-badge">Clinical AI v1.0</span>
+          </div>
+        </a>
+        
+        <!-- Role Persona Switcher -->
+        <div class="role-pills" id="role-selector-bar">
+          <button class="role-pill active" id="btn-role-patient" onclick="switchPersona('PATIENT')">
+            <span>🧑 Patient</span>
+          </button>
+          <button class="role-pill" id="btn-role-doctor" onclick="switchPersona('DOCTOR')">
+            <span>🩺 Doctor</span>
+          </button>
+          <button class="role-pill" id="btn-role-admin" onclick="switchPersona('ADMIN')">
+            <span>🛡️ Hospital Admin</span>
+          </button>
         </div>
       </div>
-      
-      <a href="/docs" target="_blank" class="api-link" id="link-swagger-docs" title="Interactive Swagger API Documentation">
-        <span>📖 OpenAPI Docs</span>
-      </a>
-    </div>
-  </header>
 
-  <!-- Main Container -->
-  <main class="app-container">
+      <div class="header-actions">
+        <div class="user-badge" id="current-user-badge">
+          <div class="user-avatar" id="user-avatar-initials">JD</div>
+          <div>
+            <div style="font-weight: 700; font-size: 0.85rem;" id="user-display-name">John Doe</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);" id="user-display-role">Patient Portal</div>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-open-settings">⚙️ Settings</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-logout">Logout</button>
+        
+        <a href="/docs" target="_blank" class="api-link" id="link-swagger-docs" title="Interactive Swagger API Documentation">
+          <span>📖 OpenAPI Docs</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="app-container">
     
     <!-- Navigation Tabs per Persona -->
     <nav class="portal-tabs" id="portal-tab-bar">
@@ -479,6 +574,29 @@
     </section>
 
   </main>
+
+  </div>
+
+  <div id="access-denied-view" class="access-denied hidden">
+    <div class="access-denied-card">
+      <div class="access-denied-icon">🔒</div>
+      <h2>Access denied</h2>
+      <p id="access-denied-message">This account is not authorized to open this workspace.</p>
+      <button type="button" class="btn btn-primary" id="btn-return-login">Return to secure login</button>
+    </div>
+  </div>
+
+  <aside id="settings-panel" class="settings-panel hidden" aria-label="User settings">
+    <div class="settings-header">
+      <div>
+        <div class="settings-eyebrow">Account preferences</div>
+        <h3 id="settings-role-title">User Settings</h3>
+      </div>
+      <button type="button" class="icon-button" id="btn-close-settings" aria-label="Close settings">✕</button>
+    </div>
+
+    <div id="settings-content" class="settings-content"></div>
+  </aside>
 
   <!-- Notifications & Toast Alerts -->
   <div id="toast-container"></div>

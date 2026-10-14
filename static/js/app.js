@@ -30,6 +30,7 @@ let currentRole = 'PATIENT';
 let authToken = null;
 let currentProfile = null;
 let doctorsList = [];
+let selectedLoginRole = 'PATIENT';
 
 // Tab configuration per role
 const TABS = {
@@ -95,35 +96,168 @@ async function apiCall(endpoint, options = {}) {
 }
 
 // Log in as a given persona
-async function loginPersona(role) {
-  const p = PERSONAS[role];
+async function loginPersona(role, overrides = {}) {
+  const p = { ...PERSONAS[role], ...overrides };
+  const email = (p.email || '').trim();
+  const password = p.password || '';
+
+  if (!email || !password) {
+    throw new Error('Email and password are required to sign in.');
+  }
+
   try {
     const data = await apiCall('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email: p.email, password: p.password })
+      body: JSON.stringify({ email, password })
     });
     authToken = data.access_token;
     currentProfile = data;
+    currentRole = data.role || role;
+    updateUserBadge();
     return data;
   } catch (err) {
     console.error('Failed to login persona:', err);
+    throw err;
   }
 }
 
-// Switch Persona UI
-async function switchPersona(role) {
-  currentRole = role;
+function updateUserBadge() {
+  const role = currentProfile?.role || currentRole;
+  const persona = PERSONAS[role] || PERSONAS.PATIENT;
 
-  // Update role buttons
+  const initials = currentProfile?.full_name ? currentProfile.full_name.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase() : persona.initials;
+  document.getElementById('user-avatar-initials').innerText = initials;
+  document.getElementById('user-display-name').innerText = currentProfile?.full_name || persona.name;
+  document.getElementById('user-display-role').innerText = persona.roleLabel;
+
   document.querySelectorAll('.role-pill').forEach(btn => btn.classList.remove('active'));
   const activeBtn = document.getElementById(`btn-role-${role.toLowerCase()}`);
   if (activeBtn) activeBtn.classList.add('active');
+}
 
-  // Update user badge
+function setLoginRole(role) {
+  selectedLoginRole = role;
   const p = PERSONAS[role];
-  document.getElementById('user-avatar-initials').innerText = p.initials;
-  document.getElementById('user-display-name').innerText = p.name;
-  document.getElementById('user-display-role').innerText = p.roleLabel;
+  document.querySelectorAll('.auth-role').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.role === role);
+  });
+
+  const emailInput = document.getElementById('login-email');
+  const passwordInput = document.getElementById('login-password');
+  if (emailInput) emailInput.value = p.email;
+  if (passwordInput) passwordInput.value = p.password;
+
+  const authBtn = document.getElementById('btn-login-role');
+  if (authBtn) {
+    authBtn.innerHTML = `<span>🔐 Sign in as ${p.roleLabel.replace(' Portal', '')}</span>`;
+  }
+}
+
+function showAuthMessage(message, type = 'error') {
+  const el = document.getElementById('auth-message');
+  if (!el) return;
+  el.textContent = message;
+  el.className = `auth-message ${type}`;
+}
+
+function showAppShell() {
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('app-shell').classList.remove('hidden');
+  document.getElementById('access-denied-view').classList.add('hidden');
+}
+
+function showLoginScreen() {
+  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('app-shell').classList.add('hidden');
+  document.getElementById('access-denied-view').classList.add('hidden');
+  document.getElementById('settings-panel').classList.add('hidden');
+}
+
+function showAccessDenied(requiredRole, actualRole) {
+  const messageEl = document.getElementById('access-denied-message');
+  messageEl.textContent = `This ${actualRole.toLowerCase()} account is not permitted to open the ${requiredRole.toLowerCase()} workspace. Please sign in with an authorized account.`;
+  document.getElementById('access-denied-view').classList.remove('hidden');
+  document.getElementById('app-shell').classList.add('hidden');
+  document.getElementById('auth-screen').classList.add('hidden');
+}
+
+async function handleRoleLogin(event) {
+  event.preventDefault();
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+
+  if (!email || !password) {
+    showAuthMessage('Enter both your email address and password to continue.', 'error');
+    return;
+  }
+
+  try {
+    await loginPersona(selectedLoginRole, { email, password });
+    const role = currentProfile?.role || selectedLoginRole;
+    const p = PERSONAS[role] || PERSONAS.PATIENT;
+    showAuthMessage(`Welcome back, ${p.name}. Redirecting to your dashboard...`, 'success');
+    setTimeout(() => {
+      showAppShell();
+      switchPersona(role);
+    }, 250);
+  } catch (error) {
+    showAuthMessage(error.message || 'We could not sign you in with the supplied credentials.', 'error');
+  }
+}
+
+async function handleRegister(event) {
+  event.preventDefault();
+  const fullName = document.getElementById('register-full-name').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const phoneNumber = document.getElementById('register-phone').value.trim();
+  const password = document.getElementById('register-password').value;
+
+  if (!fullName || !email || !phoneNumber || !password) {
+    showAuthMessage('Complete each registration field before creating your account.', 'error');
+    return;
+  }
+
+  try {
+    const payload = {
+      full_name: fullName,
+      email,
+      phone_number: phoneNumber,
+      password,
+      role: 'PATIENT'
+    };
+
+    const result = await apiCall('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    authToken = result.access_token;
+    currentProfile = result;
+    currentRole = result.role || 'PATIENT';
+    showAuthMessage('Patient account created successfully. Redirecting to your dashboard...', 'success');
+    setTimeout(() => {
+      showAppShell();
+      switchPersona('PATIENT');
+    }, 250);
+  } catch (error) {
+    showAuthMessage(error.message || 'We could not create the patient account with the details provided.', 'error');
+  }
+}
+
+async function switchPersona(role) {
+  if (!authToken || !currentProfile) {
+    setLoginRole(role);
+    showLoginScreen();
+    return;
+  }
+
+  if (currentProfile.role && currentProfile.role !== role) {
+    showAccessDenied(role, currentProfile.role);
+    return;
+  }
+
+  currentRole = role;
+  updateUserBadge();
 
   // Toggle portal views
   document.getElementById('view-patient-portal').style.display = role === 'PATIENT' ? 'block' : 'none';
@@ -132,9 +266,6 @@ async function switchPersona(role) {
 
   // Render Tabs
   renderTabs(role);
-
-  // Authenticate
-  await loginPersona(role);
 
   // Load relevant data
   if (role === 'PATIENT') {
@@ -151,7 +282,110 @@ async function switchPersona(role) {
     await loadAuditLogs();
   }
 
-  showToast(`Switched to ${p.roleLabel}`, 'success');
+  const p = PERSONAS[role] || PERSONAS.PATIENT;
+  showToast(`Welcome to the ${p.roleLabel}`, 'success');
+}
+
+function loadSettingsView() {
+  const role = currentProfile?.role || currentRole;
+  const persona = PERSONAS[role] || PERSONAS.PATIENT;
+  const content = document.getElementById('settings-content');
+  const profileName = currentProfile?.full_name || persona.name;
+  const profileEmail = currentProfile?.email || persona.email;
+
+  content.innerHTML = `
+    <div class="settings-card">
+      <h4>Profile</h4>
+      <p><strong>${escapeHtml(profileName)}</strong></p>
+      <p>${escapeHtml(profileEmail)}</p>
+      <p>Role: ${escapeHtml(role)}</p>
+    </div>
+
+    <div class="settings-card">
+      <h4>Security</h4>
+      <div class="settings-row">
+        <span>Change password</span>
+        <span class="badge badge-medium">Secure backend flow</span>
+      </div>
+      <div class="settings-row">
+        <span>Two-factor guidance</span>
+        <span>Use your institution account and approved device</span>
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <h4>Notifications</h4>
+      <div class="settings-row">
+        <span>Appointment reminders</span>
+        <label class="switch">
+          <input type="checkbox" data-setting="appointment-reminders" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="settings-row">
+        <span>Clinical updates</span>
+        <label class="switch">
+          <input type="checkbox" data-setting="clinical-updates" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="settings-row">
+        <span>Accessibility mode</span>
+        <label class="switch">
+          <input type="checkbox" data-setting="accessibility-mode">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <h4>${role === 'PATIENT' ? 'Patient support' : role === 'DOCTOR' ? 'Professional tools' : 'Administration'}</h4>
+      <ul>
+        ${role === 'PATIENT' ? '<li>Read appointment reminders and prescription updates.</li><li>Review secure records and health documents.</li>' : role === 'DOCTOR' ? '<li>Review clinical encounters and triage notes.</li><li>Manage consultation availability and patient communications.</li>' : '<li>Review system audits and verified user activity.</li><li>Restrict access to approved administrative controls.</li>'}
+      </ul>
+    </div>
+
+    <div class="settings-actions">
+      <button type="button" class="btn btn-primary" id="btn-save-settings">Save preferences</button>
+      <button type="button" class="btn btn-secondary" id="btn-close-settings-inline">Close</button>
+    </div>
+  `;
+
+  const saveBtn = document.getElementById('btn-save-settings');
+  if (saveBtn) saveBtn.addEventListener('click', saveSettings);
+
+  const closeBtn = document.getElementById('btn-close-settings-inline');
+  if (closeBtn) closeBtn.addEventListener('click', () => document.getElementById('settings-panel').classList.add('hidden'));
+}
+
+function saveSettings() {
+  const settings = {};
+  document.querySelectorAll('[data-setting]').forEach(input => {
+    settings[input.dataset.setting] = input.checked;
+  });
+  localStorage.setItem('healora.settings', JSON.stringify(settings));
+  showToast('Your preferences were saved on this device.', 'success');
+}
+
+function showSettingsPanel() {
+  if (!currentProfile && !authToken) {
+    showAuthMessage('Sign in to access your settings.', 'error');
+    showLoginScreen();
+    return;
+  }
+
+  loadSettingsView();
+  document.getElementById('settings-panel').classList.remove('hidden');
+}
+
+function handleLogout() {
+  authToken = null;
+  currentProfile = null;
+  currentRole = 'PATIENT';
+  localStorage.removeItem('healora.auth');
+  showLoginScreen();
+  setLoginRole('PATIENT');
+  showAuthMessage('You have been signed out securely.', 'success');
 }
 
 // Render dynamic tabs
@@ -645,5 +879,52 @@ function escapeHtml(str) {
 
 // Initial Boot
 document.addEventListener('DOMContentLoaded', () => {
-  switchPersona('PATIENT');
+  setLoginRole('PATIENT');
+  showLoginScreen();
+
+  document.querySelectorAll('.auth-role').forEach(button => {
+    button.addEventListener('click', () => setLoginRole(button.dataset.role));
+  });
+
+  document.getElementById('form-role-login').addEventListener('submit', handleRoleLogin);
+  document.getElementById('form-role-register').addEventListener('submit', handleRegister);
+  document.getElementById('btn-toggle-password').addEventListener('click', () => {
+    const input = document.getElementById('login-password');
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    document.getElementById('btn-toggle-password').textContent = isPassword ? 'Hide' : 'Show';
+  });
+
+  document.getElementById('btn-create-account').addEventListener('click', () => {
+    document.getElementById('form-role-login').classList.add('hidden');
+    document.getElementById('form-role-register').classList.remove('hidden');
+    showAuthMessage('Create a patient account or sign in with one of the existing verified users.', 'success');
+  });
+
+  document.getElementById('btn-back-to-login').addEventListener('click', () => {
+    document.getElementById('form-role-register').classList.add('hidden');
+    document.getElementById('form-role-login').classList.remove('hidden');
+    showAuthMessage('', 'error');
+  });
+
+  document.getElementById('btn-forgot-password').addEventListener('click', () => {
+    showAuthMessage('Password recovery is handled through the secure backend flow. Please contact the HEALORA support team or use the verified admin support route.', 'success');
+  });
+
+  document.getElementById('btn-open-settings').addEventListener('click', showSettingsPanel);
+  document.getElementById('btn-close-settings').addEventListener('click', () => document.getElementById('settings-panel').classList.add('hidden'));
+  document.getElementById('btn-return-login').addEventListener('click', () => {
+    currentProfile = null;
+    authToken = null;
+    currentRole = 'PATIENT';
+    showLoginScreen();
+    setLoginRole('PATIENT');
+  });
+  document.getElementById('btn-logout').addEventListener('click', handleLogout);
+
+  const savedSettings = JSON.parse(localStorage.getItem('healora.settings') || '{}');
+  Object.entries(savedSettings).forEach(([key, value]) => {
+    const input = document.querySelector(`[data-setting="${key}"]`);
+    if (input) input.checked = !!value;
+  });
 });
