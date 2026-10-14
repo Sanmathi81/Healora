@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="HEALORA – Smart Hospital Communication Platform for patients and doctors. Book appointments, consult online, manage health records.">
+  <title>HEALORA – Smart Hospital Communication Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+     AUTH SCREEN
+════════════════════════════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-bg"></div>
+  <div class="auth-grid"></div>
+  <div class="auth-container">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🏥</div>
+      <h1>HEALORA</h1>
+      <p>Smart Hospital Communication Platform</p>
+    </div>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Sign In</button>
+        <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Register</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form class="auth-form" id="form-login" onsubmit="handleLogin(event)">
+        <div id="login-error" class="auth-error"></div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" id="login-email" class="form-control" placeholder="you@example.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="auth-submit" id="btn-login">Sign In to HEALORA</button>
+        <p class="text-sm text-muted" style="text-align:center;margin-top:4px;">
+          Demo: <strong>patient@healora.com</strong> / <strong>doctor@healora.com</strong> — pass: <strong>test1234</strong>
+        </p>
+      </form>
+
+      <!-- REGISTER FORM -->
+      <form class="auth-form hidden" id="form-register" onsubmit="handleRegister(event)">
+        <div id="register-error" class="auth-error"></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">First Name</label>
+            <input type="text" id="reg-fname" class="form-control" placeholder="Arjun" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name</label>
+            <input type="text" id="reg-lname" class="form-control" placeholder="Sharma" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" id="reg-email" class="form-control" placeholder="you@example.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="reg-password" class="form-control" placeholder="Min 8 characters" required autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input type="tel" id="reg-phone" class="form-control" placeholder="+91 98765 43210">
+        </div>
+        <div class="form-group">
+          <label class="form-label">I am a</label>
+          <select id="reg-role" class="form-control" onchange="toggleDoctorFields()">
+            <option value="PATIENT">Patient</option>
+            <option value="DOCTOR">Doctor</option>
+          </select>
+        </div>
+        <!-- Doctor-only fields -->
+        <div class="doctor-fields" id="doctor-fields">
+          <div class="form-group">
+            <label class="form-label">Medical License Number</label>
+            <input type="text" id="reg-license" class="form-control" placeholder="MCI-XXXX-XXXX">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Specialization</label>
+            <input type="text" id="reg-spec" class="form-control" placeholder="e.g. Cardiology">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Department</label>
+            <input type="text" id="reg-dept" class="form-control" placeholder="e.g. Cardiac Sciences">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Years of Experience</label>
+            <input type="number" id="reg-exp" class="form-control" placeholder="5" min="0" max="60">
+          </div>
+        </div>
+        <button type="submit" class="auth-submit" id="btn-register">Create Account</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     APP SHELL (shown after login)
+════════════════════════════════════════════ -->
+<div id="app-shell" class="hidden">
+
+  <!-- Mobile overlay -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar" id="sidebar">
+    <a class="sidebar-logo" href="#">
+      <div class="sidebar-logo-icon">🏥</div>
+      <span class="sidebar-logo-text">HEALORA</span>
+    </a>
+    <div class="sidebar-user">
+      <div class="sidebar-user-name" id="sb-user-name">Loading...</div>
+      <span class="sidebar-user-role role-patient" id="sb-user-role">Patient</span>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav">
+      <!-- nav items injected by JS based on role -->
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sidebar-logout" onclick="handleLogout()">
+        <span>🚪</span> Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="main-content">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="topbar-notif-btn" id="notif-btn" onclick="navigateTo('notifications')" title="Notifications">
+          🔔
+          <span class="notif-dot" id="notif-dot"></span>
+        </button>
+        <div class="topbar-avatar" id="topbar-avatar">—</div>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <main class="content-area" id="content-area">
+
+      <!-- ══ PATIENT SECTIONS ══ -->
+
+      <!-- Dashboard (Patient) -->
+      <section class="section" id="sec-dashboard" data-title="Dashboard">
+        <div class="section-header">
+          <div>
+            <div class="section-title" id="dash-greeting">Good morning 👋</div>
+            <div class="section-sub">Here's your health overview for today.</div>
+          </div>
+          <button class="btn btn-primary" onclick="navigateTo('book-appointment')">
+            📅 Book Appointment
+          </button>
+        </div>
+        <div class="stats-grid" id="patient-stats">
+          <div class="stat-card c">
+            <div class="stat-label">Upcoming Appointments</div>
+            <div class="stat-value" id="st-upcoming">—</div>
+            <div class="stat-desc">Scheduled</div>
+            <div class="stat-icon">📅</div>
+          </div>
+          <div class="stat-card b">
+            <div class="stat-label">Total Appointments</div>
+            <div class="stat-value" id="st-total-appt">—</div>
+            <div class="stat-desc">All time</div>
+            <div class="stat-icon">🗂️</div>
+          </div>
+          <div class="stat-card g">
+            <div class="stat-label">Health Queries</div>
+            <div class="stat-value" id="st-queries">—</div>
+            <div class="stat-desc">Sent</div>
+            <div class="stat-icon">💬</div>
+          </div>
+          <div class="stat-card p">
+            <div class="stat-label">Prescriptions</div>
+            <div class="stat-value" id="st-prescriptions">—</div>
+            <div class="stat-desc">Active</div>
+            <div class="stat-icon">💊</div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Upcoming Appointments</div>
+              <button class="btn btn-sm btn-secondary" onclick="navigateTo('appointments')">View All</button>
+            </div>
+            <div id="dash-appt-list"><div class="loading-state"><div class="spinner"></div></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Recent Health Queries</div>
+              <button class="btn btn-sm btn-secondary" onclick="navigateTo('queries')">View All</button>
+            </div>
+            <div id="dash-query-list"><div class="loading-state"><div class="spinner"></div></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Doctor Dashboard -->
+      <section class="section" id="sec-doctor-dashboard" data-title="Doctor Dashboard">
+        <div class="section-header">
+          <div>
+            <div class="section-title" id="doc-dash-greeting">Good morning, Doctor 👨‍⚕️</div>
+            <div class="section-sub">Your practice overview for today.</div>
+          </div>
+          <div id="approval-banner-wrap"></div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card c">
+            <div class="stat-label">Today's Appointments</div>
+            <div class="stat-value" id="doc-today">—</div>
+            <div class="stat-desc">Scheduled today</div>
+            <div class="stat-icon">📅</div>
+          </div>
+          <div class="stat-card b">
+            <div class="stat-label">Pending Queries</div>
+            <div class="stat-value" id="doc-pending-q">—</div>
+            <div class="stat-desc">Awaiting response</div>
+            <div class="stat-icon">💬</div>
+          </div>
+          <div class="stat-card g">
+            <div class="stat-label">Total Patients</div>
+            <div class="stat-value" id="doc-patients">—</div>
+            <div class="stat-desc">Served</div>
+            <div class="stat-icon">👥</div>
+          </div>
+          <div class="stat-card p">
+            <div class="stat-label">Total Appointments</div>
+            <div class="stat-value" id="doc-total-appt">—</div>
+            <div class="stat-desc">All time</div>
+            <div class="stat-icon">🗂️</div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Today's Schedule</div>
+              <button class="btn btn-sm btn-secondary" onclick="navigateTo('doctor-appointments')">View All</button>
+            </div>
+            <div id="doc-appt-list"><div class="loading-state"><div class="spinner"></div></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Patient Queries</div>
+              <button class="btn btn-sm btn-secondary" onclick="navigateTo('doctor-queries')">View All</button>
+            </div>
+            <div id="doc-query-list"><div class="loading-state"><div class="spinner"></div></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Find Doctors -->
+      <section class="section" id="sec-find-doctors" data-title="Find Doctors">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Find a Doctor</div>
+            <div class="section-sub">Search specialists and book appointments instantly.</div>
+          </div>
+        </div>
+        <div class="card mb">
+          <div class="search-bar">
+            <div class="search-wrap">
+              <span class="search-ic">🔍</span>
+              <input type="text" class="search-input" id="doctor-search" placeholder="Search by name or specialization…" oninput="filterDoctors()">
+            </div>
+            <select class="filter-sel" id="dept-filter" onchange="filterDoctors()">
+              <option value="">All Departments</option>
+            </select>
+            <select class="filter-sel" id="avail-filter" onchange="filterDoctors()">
+              <option value="">Any Availability</option>
+              <option value="available">Available Now</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-auto" id="doctors-grid">
+          <div class="loading-state" style="grid-column:1/-1"><div class="spinner"></div><p>Loading doctors…</p></div>
+        </div>
+      </section>
+
+      <!-- Book Appointment -->
+      <section class="section" id="sec-book-appointment" data-title="Book Appointment">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Book an Appointment</div>
+            <div class="section-sub">Select a doctor, date and preferred time slot.</div>
+          </div>
+          <button class="btn btn-secondary" onclick="navigateTo('appointments')">← My Appointments</button>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><div class="card-title">1. Select Doctor</div></div>
+            <div class="form-group" style="margin-bottom:16px">
+              <label class="form-label">Search Doctor</label>
+              <input type="text" class="form-control" id="book-doc-search" placeholder="Name or specialization…" oninput="filterBookDoctors()">
+            </div>
+            <div id="book-doc-list" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;"></div>
+            <div class="form-group" style="margin-top:16px;">
+              <label class="form-label">Selected Doctor</label>
+              <div id="selected-doc-display" class="info-box">No doctor selected yet.</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">2. Choose Date & Time</div></div>
+            <div class="form-group">
+              <label class="form-label">Appointment Date</label>
+              <input type="date" class="form-control" id="appt-date" onchange="loadSlots()" min="">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Available Slots</label>
+              <div class="slot-grid" id="slot-grid"><p class="text-muted text-sm">Select a doctor and date first.</p></div>
+            </div>
+            <div class="form-group" style="margin-top:16px">
+              <label class="form-label">Appointment Type</label>
+              <select class="form-control" id="appt-type">
+                <option value="IN_PERSON">In-Person Consultation</option>
+                <option value="ONLINE">Online / Video Call</option>
+                <option value="EMERGENCY">Emergency</option>
+                <option value="FOLLOW_UP">Follow-Up</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Reason for Visit</label>
+              <textarea class="form-control" id="appt-reason" rows="3" placeholder="Briefly describe your concern…"></textarea>
+            </div>
+            <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;">
+              <button class="btn btn-primary" id="btn-book-appt" onclick="submitBooking()" disabled>📅 Confirm Booking</button>
+              <button class="btn btn-secondary" onclick="resetBookingForm()">Reset</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- My Appointments (Patient) -->
+      <section class="section" id="sec-appointments" data-title="My Appointments">
+        <div class="section-header">
+          <div>
+            <div class="section-title">My Appointments</div>
+            <div class="section-sub">Track and manage all your appointments.</div>
+          </div>
+          <button class="btn btn-primary" onclick="navigateTo('book-appointment')">📅 Book New</button>
+        </div>
+        <div class="card mb">
+          <div class="search-bar">
+            <div class="search-wrap">
+              <span class="search-ic">🔍</span>
+              <input type="text" class="search-input" id="appt-search" placeholder="Search appointments…" oninput="filterAppointments()">
+            </div>
+            <select class="filter-sel" id="appt-status-filter" onchange="filterAppointments()">
+              <option value="">All Status</option>
+              <option value="PENDING">Pending</option>
+              <option value="CONFIRMED">Confirmed</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Doctor</th><th>Date & Time</th><th>Type</th>
+                <th>Reason</th><th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="appt-tbody">
+                <tr><td colspan="6"><div class="loading-state"><div class="spinner"></div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- My Health Queries (Patient) -->
+      <section class="section" id="sec-queries" data-title="Health Queries">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Health Queries</div>
+            <div class="section-sub">Send questions to your doctor and receive expert replies.</div>
+          </div>
+          <button class="btn btn-primary" onclick="openQueryModal()">✉️ New Query</button>
+        </div>
+        <div id="queries-list">
+          <div class="loading-state"><div class="spinner"></div><p>Loading queries…</p></div>
+        </div>
+      </section>
+
+      <!-- Medical Records -->
+      <section class="section" id="sec-records" data-title="Medical Records">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Medical Records</div>
+            <div class="section-sub">Your prescriptions, lab results and health history.</div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">💊 Prescriptions</div>
+            </div>
+            <div id="prescriptions-list"><div class="loading-state"><div class="spinner"></div></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">🧪 Lab Results</div>
+            </div>
+            <div id="lab-results-list"><div class="loading-state"><div class="spinner"></div></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Patient Profile -->
+      <section class="section" id="sec-profile" data-title="My Profile">
+        <div class="section-header">
+          <div class="section-title">My Profile</div>
+        </div>
+        <div class="profile-hero">
+          <div class="profile-avatar-lg" id="profile-avatar-lg">—</div>
+          <div class="profile-info">
+            <h2 id="profile-full-name">Loading…</h2>
+            <p id="profile-email-display">—</p>
+            <p class="text-sm text-muted" style="margin-top:4px" id="profile-phone-display">—</p>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Personal Information</div>
+              <button class="btn btn-sm btn-secondary" onclick="openEditProfileModal()">✏️ Edit</button>
+            </div>
+            <div class="detail-grid" id="personal-info-grid">
+              <div class="loading-state"><div class="spinner"></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Health Information</div>
+              <button class="btn btn-sm btn-secondary" onclick="openEditHealthModal()">✏️ Edit</button>
+            </div>
+            <div class="detail-grid" id="health-info-grid">
+              <div class="loading-state"><div class="spinner"></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ DOCTOR SECTIONS ══ -->
+
+      <!-- Doctor Appointments -->
+      <section class="section" id="sec-doctor-appointments" data-title="Appointments">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Appointment Management</div>
+            <div class="section-sub">Review, confirm, or cancel patient appointments.</div>
+          </div>
+          <div class="search-bar">
+            <select class="filter-sel" id="doc-appt-filter" onchange="filterDocAppointments()">
+              <option value="">All Status</option>
+              <option value="PENDING">Pending</option>
+              <option value="CONFIRMED">Confirmed</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Patient</th><th>Date & Time</th><th>Type</th>
+                <th>Reason</th><th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="doc-appt-tbody">
+                <tr><td colspan="6"><div class="loading-state"><div class="spinner"></div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Doctor Queries -->
+      <section class="section" id="sec-doctor-queries" data-title="Patient Queries">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Patient Health Queries</div>
+            <div class="section-sub">Review and respond to patient health questions.</div>
+          </div>
+          <select class="filter-sel" id="query-status-filter" onchange="filterDocQueries()">
+            <option value="">All Queries</option>
+            <option value="SUBMITTED">Submitted</option>
+            <option value="ASSIGNED">Assigned</option>
+            <option value="RESOLVED">Resolved</option>
+          </select>
+        </div>
+        <div id="doc-queries-list">
+          <div class="loading-state"><div class="spinner"></div><p>Loading queries…</p></div>
+        </div>
+      </section>
+
+      <!-- Doctor Profile -->
+      <section class="section" id="sec-doctor-profile" data-title="Doctor Profile">
+        <div class="section-header">
+          <div class="section-title">Doctor Profile</div>
+        </div>
+        <div class="profile-hero">
+          <div class="profile-avatar-lg" id="doc-profile-avatar">—</div>
+          <div class="profile-info">
+            <h2 id="doc-profile-name">Loading…</h2>
+            <p id="doc-profile-spec" style="color:var(--cyan);font-weight:600">—</p>
+            <p class="text-sm text-muted" id="doc-profile-dept">—</p>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Professional Details</div>
+              <button class="btn btn-sm btn-secondary" onclick="openEditDocProfileModal()">✏️ Edit</button>
+            </div>
+            <div class="detail-grid" id="doc-details-grid">
+              <div class="loading-state"><div class="spinner"></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Weekly Availability</div>
+              <button class="btn btn-sm btn-primary" onclick="openAvailabilityModal()">⚙️ Manage</button>
+            </div>
+            <div id="avail-display">
+              <div class="loading-state"><div class="spinner"></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Notifications -->
+      <section class="section" id="sec-notifications" data-title="Notifications">
+        <div class="section-header">
+          <div class="section-title">Notifications</div>
+          <button class="btn btn-sm btn-secondary" onclick="markAllRead()">✓ Mark All Read</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div id="notif-list">
+            <div class="loading-state"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </section>
+
+    </main><!-- /content-area -->
+  </div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<!-- ════════════════════════════════════════════
+     MODALS
+════════════════════════════════════════════ -->
+
+<!-- New Query Modal -->
+<div class="modal-overlay" id="modal-query">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Submit Health Query</div>
+      <button class="modal-close" onclick="closeModal('modal-query')">✕</button>
+    </div>
+    <div class="modal-form">
+      <div class="form-group">
+        <label class="form-label">Title / Subject</label>
+        <input type="text" class="form-control" id="q-title" placeholder="Brief title for your query…">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Assign to Doctor (optional)</label>
+        <select class="form-control" id="q-doctor">
+          <option value="">— Auto assign —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Priority</label>
+        <select class="form-control" id="q-priority">
+          <option value="LOW">Low</option>
+          <option value="MEDIUM" selected>Medium</option>
+          <option value="HIGH">High</option>
+          <option value="EMERGENCY">Emergency</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Describe your health concern</label>
+        <textarea class="form-control" id="q-body" rows="5" placeholder="Describe your symptoms, concerns or questions in detail…"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-query')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitQuery()">✉️ Submit Query</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Doctor Reply Modal -->
+<div class="modal-overlay" id="modal-reply">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Reply to Patient Query</div>
+      <button class="modal-close" onclick="closeModal('modal-reply')">✕</button>
+    </div>
+    <div class="modal-form">
+      <div id="reply-query-preview" class="ai-box" style="margin-bottom:8px;"></div>
+      <div class="form-group">
+        <label class="form-label">Your Medical Response</label>
+        <textarea class="form-control" id="reply-body" rows="5" placeholder="Provide your medical advice or response…"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Update Status</label>
+        <select class="form-control" id="reply-status">
+          <option value="ASSIGNED">Assigned (In Progress)</option>
+          <option value="RESOLVED">Resolved</option>
+          <option value="REVIEWED">Reviewed</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-reply')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitReply()">💬 Send Reply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Patient Profile Modal -->
+<div class="modal-overlay" id="modal-edit-profile">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Edit Profile</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-profile')">✕</button>
+    </div>
+    <div class="modal-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input type="text" class="form-control" id="ep-fname">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input type="text" class="form-control" id="ep-lname">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone</label>
+        <input type="tel" class="form-control" id="ep-phone">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Address</label>
+        <input type="text" class="form-control" id="ep-address">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date of Birth</label>
+        <input type="date" class="form-control" id="ep-dob">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Gender</label>
+        <select class="form-control" id="ep-gender">
+          <option value="MALE">Male</option>
+          <option value="FEMALE">Female</option>
+          <option value="OTHER">Other</option>
+          <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-edit-profile')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveProfile()">💾 Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Health Info Modal -->
+<div class="modal-overlay" id="modal-edit-health">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Edit Health Information</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-health')">✕</button>
+    </div>
+    <div class="modal-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Blood Type</label>
+          <select class="form-control" id="eh-blood">
+            <option value="">Unknown</option>
+            <option value="A+">A+</option><option value="A-">A-</option>
+            <option value="B+">B+</option><option value="B-">B-</option>
+            <option value="AB+">AB+</option><option value="AB-">AB-</option>
+            <option value="O+">O+</option><option value="O-">O-</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Height (cm)</label>
+          <input type="number" class="form-control" id="eh-height" placeholder="170">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Weight (kg)</label>
+          <input type="number" class="form-control" id="eh-weight" placeholder="65">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Emergency Contact</label>
+          <input type="tel" class="form-control" id="eh-emergency" placeholder="+91…">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Allergies</label>
+        <textarea class="form-control" id="eh-allergies" rows="2" placeholder="List any known allergies…"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Chronic Conditions</label>
+        <textarea class="form-control" id="eh-conditions" rows="2" placeholder="e.g. Diabetes, Hypertension…"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Current Medications</label>
+        <textarea class="form-control" id="eh-meds" rows="2" placeholder="List current medications…"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-edit-health')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveHealthInfo()">💾 Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Doctor Profile Modal -->
+<div class="modal-overlay" id="modal-edit-doc-profile">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Edit Doctor Profile</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-doc-profile')">✕</button>
+    </div>
+    <div class="modal-form">
+      <div class="form-group">
+        <label class="form-label">Specialization</label>
+        <input type="text" class="form-control" id="edp-spec">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Department</label>
+        <input type="text" class="form-control" id="edp-dept">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Consultation Fee (₹)</label>
+        <input type="number" class="form-control" id="edp-fee" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Years of Experience</label>
+        <input type="number" class="form-control" id="edp-exp" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Bio / About</label>
+        <textarea class="form-control" id="edp-bio" rows="4" placeholder="Brief professional bio…"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Languages Spoken</label>
+        <input type="text" class="form-control" id="edp-langs" placeholder="English, Hindi, Tamil…">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-edit-doc-profile')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveDocProfile()">💾 Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Availability Modal -->
+<div class="modal-overlay" id="modal-availability">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <div class="modal-title">Manage Availability</div>
+      <button class="modal-close" onclick="closeModal('modal-availability')">✕</button>
+    </div>
+    <div id="avail-form-body">
+      <div class="loading-state"><div class="spinner"></div></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-availability')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAvailability()">💾 Save Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Appointment Detail Modal -->
+<div class="modal-overlay" id="modal-appt-detail">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="appt-detail-title">Appointment Details</div>
+      <button class="modal-close" onclick="closeModal('modal-appt-detail')">✕</button>
+    </div>
+    <div id="appt-detail-body"></div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
